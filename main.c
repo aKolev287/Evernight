@@ -20,6 +20,25 @@ typedef struct {
 
 struct termios orig_termios;
 
+char read_key(char c) {
+    if (c == '\x1b'){
+        read(STDIN_FILENO, &c, 1);
+        if (c == '['){
+            read(STDIN_FILENO, &c, 1);
+            if (c == 'A'){
+                return 'U';
+            } else if (c == 'B'){
+                return 'D';
+            } else if (c == 'C'){
+                return 'R';
+            } else {
+                return 'L';
+            }
+        }
+    }
+    return c;
+}
+
 void read_file(Editor *e){
     FILE *file;
 
@@ -28,7 +47,7 @@ void read_file(Editor *e){
 
     // allocate memory, read and check for null
     while(fgets(e->lines[e-> num_lines] = malloc(MAX_COLS * sizeof(char)), MAX_COLS, file) != NULL){
-        printf("%d. %s\r", e->num_lines, e->lines[e -> num_lines]);
+        //printf("%d. %s\r", e->num_lines, e->lines[e -> num_lines]);
         e->num_lines++;
     }
     fclose(file);
@@ -47,15 +66,20 @@ void enable_raw_mode() {
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 }
 
+// void clear_screen() { 
+//     printf("\x1b[2J");
+//     printf("\x1b[H");
+//     fflush(stdout);
+// }
 void clear_screen() { 
-    printf("\x1b[2J");
-    printf("\x1b[H");
+    printf("\x1b[H\x1b[2J\x1b[3J");
+    fflush(stdout);
 }
-
 int main(int argc, char *argv[]) {
     enable_raw_mode();
     clear_screen();
-    Editor editor = {.num_lines = 1};
+    Editor editor = {.num_lines = 0, .cursor_col = 0, .cursor_row = 0};
+
     if (argc > 1) {
         strncpy(editor.filename, argv[1], 254);
         editor.filename[254] = '\0';
@@ -63,18 +87,39 @@ int main(int argc, char *argv[]) {
 
     editor.lines = malloc(MAX_LINES * sizeof(char *));
     char c;
-
-    clear_screen();
+    read_file(&editor);
     printf("Enter a mode\nquit - q\nread - r\n");
     while(1) {
-        
-        read(STDIN_FILENO, &c, 1);
-        if (c == 'q'){
-            break;
-        } else if (c == 'r') {
-            read_file(&editor);
-            break;
+        clear_screen();
+        fflush(stdout);
+        for(int i = 0; i < editor.num_lines; i++){
+            printf("%s\r\n", editor.lines[i]);
         }
+        printf("row:%d col:%d\r\n", editor.cursor_row, editor.cursor_col);
+        printf("\x1b[%d;%dH", editor.cursor_row + 1, editor.cursor_col + 1);
+        
+        fflush(stdout); // update now
+        read(STDIN_FILENO, &c, 1);
+        char special_c = read_key(c);
+
+        //printf("\nThe position of the cursor\nrow:%d\ncol:%d\n", editor.cursor_row, editor.cursor_col);
+        
+        if (special_c == 'U' && editor.cursor_row > 0) {
+            editor.cursor_row--;
+        }
+        if (special_c == 'D' && editor.cursor_row >= 0) {
+            editor.cursor_row++;
+        }
+        if (special_c == 'L' && editor.cursor_col > 0) {
+            editor.cursor_col--;
+        } 
+        if (special_c == 'R' && editor.cursor_col >= 0) {
+            editor.cursor_col++;
+        }
+
+        
+
+
     }
     printf("\n");
     free(editor.lines);
