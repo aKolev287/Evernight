@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 
 void read_file(){
     FILE *file;
@@ -11,7 +12,9 @@ void read_file(){
 
     // allocate memory, read and check for null
     while(fgets(E.lines[E.num_lines] = malloc(MAX_COLS * sizeof(char)), MAX_COLS, file) != NULL){
-        //printf("%d. %s\r", e->num_lines, e->lines[e -> num_lines]);
+        int len = strlen(E.lines[E.num_lines]);
+        if (len > 0 && E.lines[E.num_lines][len-1] == '\n')
+            E.lines[E.num_lines][len-1] = '\0';
         E.num_lines++;
     }
     fclose(file);
@@ -34,22 +37,10 @@ void refresh_screen() {
     }
     printf("\x1b[%d;%dH", E.cursor_row + 1, E.cursor_col + 1);
     fflush(stdout);
-    read(STDIN_FILENO, &E.key, 1);
-    char special_c = read_key(E.key);
 
-    if (special_c == 'U' && E.cursor_row > 0) {
-            E.cursor_row--;
-    }
-    if (special_c == 'D' && E.cursor_row >= 0) {
-            E.cursor_row++;
-    }
-    if (special_c == 'L' && E.cursor_col > 0) {
-            E.cursor_col--;
-    } 
-    if (special_c == 'R' && E.cursor_col >= 0) {
-            E.cursor_col++;
-    }
 }
+
+
 
 void die(){
     printf("\n");

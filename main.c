@@ -1,5 +1,5 @@
 #include <string.h>
-
+#include <unistd.h>
 #include "editor.h"
 
 struct editor_config E;
@@ -7,6 +7,7 @@ struct editor_config E;
 void initEditor(void){
     E.num_lines = 0;
     E.cursor_col = 0; E.cursor_row = 0;
+    E.state = 'n';
 }
 
 int main(int argc, char *argv[]) {
@@ -22,8 +23,14 @@ int main(int argc, char *argv[]) {
 
     while(1) {
         refresh_screen();
+        if (E.state == 'n'){
+            read_command();
+        } else if (E.state == 'i') {
+            insert();
+        }
     }
     
     die();
+    clear_screen();
     return 0;
 }
